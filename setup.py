@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="AlfonsIoT",
-    version="0.0.3",
+    version="0.0.3.2",
     author="Anton Lindroth",
     author_email="ntoonio@gmail.com",
     description="A package for IoT's to interact with Alfons",

@@ -27,7 +27,7 @@ def _getIP():
 		except socket.timeout:
 			pass
 	
-	return json.loads(msg)["ip"]
+	return json.loads(msg.decode("utf-8"))["ip"]
 
 def _getID():
 	if "id" in config:
@@ -53,7 +53,7 @@ def connect(**kwargs):
 	onConnect = kwargs.get("on_connect")
 	if onConnect is not None:
 		mqtt.on_connect = onConnect
-
+	
 	mqtt.connect(_getIP(), 27370, 60)
 
 	if kwargs.get("block", False):
