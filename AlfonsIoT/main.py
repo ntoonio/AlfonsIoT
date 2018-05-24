@@ -15,9 +15,19 @@ def _getIP():
 
 	discoverSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 	discoverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-	discoverSocket.sendto(b"discover", ("255.255.255.255", 27369))
+	discoverSocket.settimeout(1)
 	
-	return json.loads(discoverSocket.recv(1024))["ip"]
+	msg = None
+
+	while not msg:
+		discoverSocket.sendto(b"discover", ("255.255.255.255", 27369))
+		
+		try:
+			msg = discoverSocket.recv(1024)
+		except socket.timeout:
+			pass
+	
+	return json.loads(msg)["ip"]
 
 def _getID():
 	if "id" in config:
