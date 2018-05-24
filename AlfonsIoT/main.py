@@ -9,13 +9,6 @@ import sys
 import paho.mqtt.client
 import yaml
 
-_block = False
-def block():
-	"Block further execution. Ex useful when you only want to run a function when received a message. Can be unblocked by setting `_block` to `False`"
-	_block = True
-	while _block:
-		time.sleep(1)
-
 def _getIP():
 	if "ip" in config:
 		return config["ip"]
@@ -29,12 +22,15 @@ def _getIP():
 def _getID():
 	if "id" in config:
 		return config["id"]
+
+	if "id" in data:
+		return data["id"]
 	
 	clientId = "".join(random.choices(string.ascii_letters + string.digits, k=16))
-	config["id"] = clientId
-	
-	with open(PATH + "/config.yaml", "w") as f:
-		yaml.dump(config, f, default_flow_style=False)
+	data["id"] = clientId
+
+	with open(PATH + "/data.json", "w") as f:
+		json.dump(data, f)
 
 	return clientId
 
@@ -49,12 +45,27 @@ def connect(**kwargs):
 		mqtt.on_connect = onConnect
 
 	mqtt.connect(_getIP(), 27370, 60)
-	mqtt.loop_start()
+
+	if kwargs.get("block", False):
+		mqtt.loop_forever()
+	else:
+		mqtt.loop_start()
 
 PATH = os.path.dirname(os.path.abspath(sys.argv[0]))
 
-with open(PATH + "/config.yaml") as f:
-	config = yaml.load(f)
+# Read files
+
+try:
+	with open(PATH + "/config.yaml") as f:
+		config = yaml.load(f)
+except:
+	config = {}
+
+try:
+	with open(PATH + "/data.json") as f:
+		data = json.load(f)
+except:
+	data = {}
 
 # MQTT
 mqtt = paho.mqtt.client.Client()

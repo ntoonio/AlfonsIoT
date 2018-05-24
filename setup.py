@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="AlfonsIoT",
-    version="0.0.1",
+    version="0.0.2",
     author="Anton Lindroth",
     author_email="ntoonio@gmail.com",
     description="A package for IoT's to interact with Alfons",
@@ -13,4 +13,8 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/ntoonio/AlfonsIoT.git",
     packages=setuptools.find_packages(),
+	install_requires=[
+		"pyyaml==3.12",
+		"paho-mqtt==1.3.1"
+	]
 )
