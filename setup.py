@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="AlfonsIoT",
-    version="0.0.3.2",
+    version="0.0.4",
     author="Anton Lindroth",
     author_email="ntoonio@gmail.com",
-    description="A package for IoT's to interact with Alfons",
+    description="A package for IoTs to interact with Alfons",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/ntoonio/AlfonsIoT.git",
