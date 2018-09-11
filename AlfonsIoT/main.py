@@ -11,6 +11,7 @@ import yaml
 
 projectPath = ""
 config = {"uninitialized": True}
+data = {}
 mqtt = paho.mqtt.client.Client()
 
 def _getIP():
@@ -77,15 +78,15 @@ def setup(path = None):
 	global mqtt, config, data, projectPath
 
 	if path == None:
-		configPath = os.path.abspath(sys.argv[0])
+		objectPath = os.path.abspath(sys.argv[0])
 	else:
-		configPath = path
+		objectPath = path
 	
-	projectPath = os.path.dirname(configPath)
+	projectPath = os.path.dirname(objectPath)
 	
 	# Read files
 	try:
-		with open(configPath) as f:
+		with open(projectPath + "/config.yaml") as f:
 			config = yaml.load(f)
 	except:
 		config = {}
