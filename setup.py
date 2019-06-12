@@ -8,7 +8,7 @@ with open("requirements.txt", "r") as fh:
 
 setuptools.setup(
 	name="AlfonsIoT",
-	version="0.0.4",
+	version="0.0.5",
 	author="Anton Lindroth",
 	author_email="ntoonio@gmail.com",
 	description="A package for IoTs to interact with Alfons",
