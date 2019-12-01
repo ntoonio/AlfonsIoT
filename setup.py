@@ -1,6 +1,18 @@
 import setuptools
 
-with open("README.md", "r") as fh:
+PATH = os.path.dirname(os.path.abspath(__file__)) + "/"
+
+installRequires = []
+
+with open(PATH + "requirements.txt", "r") as f:
+	for l in f.readlines():
+		l = re.sub("#.*$", "", l) # Removed comments
+		l = l.rstrip().lstrip()
+
+		if not l == "": # Empty lines (and commented lines which now are empty) will be removed
+			installRequires.append(l)
+
+with open(PATH + "README.md", "r") as fh:
 	long_description = fh.read()
 
 setuptools.setup(
@@ -11,10 +23,7 @@ setuptools.setup(
 	description="A package for IoTs to interact with Alfons",
 	long_description=long_description,
 	long_description_content_type="text/markdown",
-	url="https://github.com/ntoonio/AlfonsIoT.git",
+	url="https://github.com/ntoonio/AlfonsIoT",
 	packages=setuptools.find_packages(),
-	install_requires=[
-		"pyyaml>=4.2b1",
-		"paho-mqtt==1.3.1"
-	]
+	install_requires=installRequires
 )

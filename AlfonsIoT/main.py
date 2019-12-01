@@ -1,102 +1,120 @@
 import socket
 import json
-import os
 import string
-import random
 import time
-import sys
+import paho.mqtt.client as mqtt
+import requests
+import logging
+import random
+import ssl
 
-import paho.mqtt.client
-import yaml
+class AlfonsIoT():
+	def __init__(self, host=None, port="27370", **kwargs):
+		self._host = host
+		self._port = port
 
-projectPath = ""
-config = {"uninitialized": True}
-data = {}
-mqtt = paho.mqtt.client.Client()
+		self._username = kwargs.pop("username", None)
+		self._password = kwargs.pop("password", None)
 
-def _getIP():
-	ip = getConfig("ip")
-	if ip: return ip
+		self._kwargs = kwargs
 
-	discoverSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-	discoverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-	discoverSocket.settimeout(1)
-	
-	msg = None
+		self.mqttOnConnect = None
+		self.mqttOnMessage = None
+		self.mqttOnDisconnect = None
 
-	while not msg:
-		discoverSocket.sendto(b"discover", ("255.255.255.255", 27369))
-		
+		self._sslEnable = kwargs.pop("ssl", True)
+
+	def start(self):
+		if self._host == None or self._port == None:
+			self._findAlfons()
+			if not self.discoveryData: raise Exception("Couldn't find Alfons server")
+
+		self.webURL = "http{}://".format("s" if self._sslEnable else "") + self._host + ":" + str(self._port) + "/"
+
+		r = requests.get(self.webURL + "api/v1/info/")
+		if not (r.status_code >= 200 and r.status_code < 300):
+			raise requests.HTTPError("Getting info API failed")
+
+		data = r.json()
+		self._host = data["domain"] if data["ssl"] else data["ip"]
+		self._port = data["web_port"]
+		self._data = data
+
+		self._connectMQTT()
+
+	def _findAlfons(self):
+		discoverSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+		discoverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+		discoverSocket.settimeout(1)
+
+		startSearchTime = time.time()
+
+		msg = None
+		while not msg:
+			ip = self._host or "255.255.255.255"
+
+			logging.debug("Broadcasting alfons discover to {}:27369".format(ip))
+			discoverSocket.sendto(b"discover", (ip, 27369))
+
+			try:
+				msg = discoverSocket.recv(1024)
+			except socket.timeout:
+				if startSearchTime + 30 < time.time(): raise socket.timeout()
+
+		data = json.loads(msg.decode("utf-8"))
+
+		self._host = data["domain"] if data["ssl"] else data["ip"]
+		self._port = data["web_port"]
+		self.discoveryData = data
+
+	def _connectMQTT(self):
+		clientID = self._kwargs.get("clientID", _createRandomString(10))
+
+		self._client = mqtt.Client(clientID, transport="tcp")
+
+		if self._username != None:
+			self._client.username_pw_set(self._username, self._password)
+
+		self._client.on_message = self._mqttOnMessage
+		self._client.on_connect = self._mqttOnConnect
+		self._client.on_disconnect = self._mqttOnDisconnect
+
+		sslContext = None
+		if self._sslEnable:
+			sslContext = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+			sslContext.load_verify_locations(cafile=requests.certs.where())
+
+		self._client.tls_set_context(sslContext)
+		self._client.connect(self._host, self._data["mqtt"]["tcp_port"])
+		self._client.loop_start()
+
+	def _mqttOnConnect(self, *args, **kwargs):
+		print("_mqttOnConnect", args, kwargs)
 		try:
-			msg = discoverSocket.recv(1024)
-		except socket.timeout:
+			self.mqttOnConnect(*args, **kwargs)
+		except TypeError:
 			pass
-	
-	return json.loads(msg.decode("utf-8"))["ip"]
 
-def _getID():
-	return getConfig("id")
+	def _mqttOnMessage(self, *args, **kwargs):
+		print("_mqttOnMessage", args, kwargs)
+		try:
+			self.mqttOnMessage(*args, **kwargs)
+		except TypeError:
+			pass
 
-def getConfig(key):
-	if key in config:
-		return config[key]
+	def _mqttOnDisconnect(self, *args, **kwargs):
+		print("_mqttOnDisconnect", args, kwargs)
+		try:
+			self.mqttOnConnect(*args, **kwargs)
+		except TypeError:
+			pass
 
-	if key in data:
-		return data[key]
-	
-	return None
+def _createRandomString(length=10, letters=string.hexdigits):
+    "Generate a random string"
+    return "".join(random.choice(letters) for i in range(length))
 
-def connect(**kwargs):
-	# MQTT
-	onMessage = kwargs.get("on_message")
-	if onMessage is not None:
-		mqtt.on_message = onMessage
-	
-	onConnect = kwargs.get("on_connect")
-	if onConnect is not None:
-		mqtt.on_connect = onConnect
-	
-	mqtt.username_pw_set("iot-" + _getID(), "iot")
-	mqtt.connect(_getIP(), 27370, 60)
+def start(**kwargs):
+	a = AlfonsIoT(**kwargs)
+	a.start()
 
-	if kwargs.get("block", False):
-		mqtt.loop_forever()
-	else:
-		mqtt.loop_start()
-
-def setup(path = None):
-	"Path to a config file"
-	
-	global mqtt, config, data, projectPath
-
-	if path == None:
-		projectPath = os.path.abspath(sys.argv[0])
-		fileName = "config.yaml"
-	else:
-		projectPath = os.path.dirname(path)
-		fileName = os.path.basename(path)
-		
-	# Read files
-	try:
-		with open(projectPath + "/" + fileName) as f:
-			config = yaml.safe_load(f)
-	except Exception as e:
-		config = {}
-
-	try:
-		with open(projectPath + "/data.json") as f:
-			data = json.load(f)
-	except:
-		data = {}
-
-	clientId = getConfig("id")
-	
-	if not clientId:
-		clientId = "".join(random.choices(string.ascii_letters + string.digits, k=16))
-		data["id"] = clientId
-
-		with open(projectPath + "/data.json", "w") as f:
-			json.dump(data, f)
-
-	# MQTT
-	mqtt._client_id = _getID()
+	return a

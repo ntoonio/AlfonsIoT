@@ -1,0 +1,8 @@
+-e git+https://github.com/ntoonio/AlfonsIoT.git@5ffea454e574092e26b00e83df3144a76d065386#egg=AlfonsIoT
+certifi==2019.11.28
+chardet==3.0.4
+idna==2.8
+paho-mqtt==1.5.0
+PyYAML==5.1.2
+requests==2.22.0
+urllib3==1.25.7
