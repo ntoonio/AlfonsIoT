@@ -1,4 +1,6 @@
 import setuptools
+import os
+import re
 
 PATH = os.path.dirname(os.path.abspath(__file__)) + "/"
 
@@ -6,7 +8,7 @@ installRequires = []
 
 with open(PATH + "requirements.txt", "r") as f:
 	for l in f.readlines():
-		l = re.sub("#.*$", "", l) # Removed comments
+		l = re.sub("(#|-e).*$", "", l) # Remove comments and lines that start with -e
 		l = l.rstrip().lstrip()
 
 		if not l == "": # Empty lines (and commented lines which now are empty) will be removed
