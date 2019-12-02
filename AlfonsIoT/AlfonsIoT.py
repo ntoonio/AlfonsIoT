@@ -41,7 +41,11 @@ class AlfonsIoT():
 			self._host = discoData["domain"] if self._sslEnable else discoData["ip"]
 			self._port = discoData["web_port"]
 
-		r = requests.get(self.webURL + "api/v1/info/")
+		try:
+			r = requests.get(self.webURL + "api/v1/info/")
+		except requests.exceptions.SSLError as e: # In case both host and port was set at init, but ssl was set to wrong value
+			raise Exception("Alfons is using SSL, this client is not")
+
 		if not (r.status_code >= 200 and r.status_code < 300):
 			log.debug("Tried getting api from base '{}'".format(self.webURL))
 			raise requests.HTTPError("Getting info API failed")
