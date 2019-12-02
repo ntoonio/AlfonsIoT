@@ -12,9 +12,9 @@ import re
 log = logging.getLogger("alfonsiot")
 
 class AlfonsIoT():
-	def __init__(self, host=None, port=27370, **kwargs):
+	def __init__(self, host=None, port=None, **kwargs):
 		self._host = host
-		self._port = int(port)
+		self._port = port
 
 		self._username = kwargs.pop("username", None)
 		self._password = kwargs.pop("password", None)
@@ -28,14 +28,17 @@ class AlfonsIoT():
 		self.mqttOnMessage = None
 		self.mqttOnDisconnect = None
 
-		self._sslEnable = kwargs.pop("ssl", True)
+		self._mqttTCPport = None
+
+		self._sslEnable = kwargs.pop("ssl", False)
 
 	def start(self):
 		# If either host or port are known, try to auto-discover
 		if self._host == None or self._port == None:
 			discoData = _findAlfons()
 			if not discoData: raise Exception("Couldn't find Alfons server") # TODO: Find a better exception
-			self._host = discoData["domain"] if discoData["ssl"] else discoData["ip"]
+			self._sslEnable = discoData["ssl"]
+			self._host = discoData["domain"] if self._sslEnable else discoData["ip"]
 			self._port = discoData["web_port"]
 
 		r = requests.get(self.webURL + "api/v1/info/")
@@ -45,8 +48,7 @@ class AlfonsIoT():
 
 		data = r.json()
 		self._host = data["domain"] if data["ssl"] else data["ip"]
-		self._port = data["web_port"]
-		self._data = data
+		self._mqttTCPPort = data["mqtt"]["tcp_port"]
 
 		self._connectMQTT()
 
@@ -60,13 +62,12 @@ class AlfonsIoT():
 		self._client.on_connect = self._mqttOnConnect
 		self._client.on_disconnect = self._mqttOnDisconnect
 
-		sslContext = None
 		if self._sslEnable:
 			sslContext = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
 			sslContext.load_verify_locations(cafile=requests.certs.where())
+			self._client.tls_set_context(sslContext)
 
-		self._client.tls_set_context(sslContext)
-		self._client.connect(self._host, self._data["mqtt"]["tcp_port"])
+		self._client.connect(self._host, self._mqttTCPPort)
 		self._client.loop_start()
 
 	def subscribe(self, topic, func, **kwargs):
