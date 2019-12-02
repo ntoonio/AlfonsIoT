@@ -112,10 +112,8 @@ class AlfonsIoT():
 	def _mqttOnConnect(self, client, userData, flags, rc):
 		log.info("MQTT connected. userData={} flags={} rc={}".format(userData, flags, rc))
 
-		try:
-			self.mqttOnConnect(*args, **kwargs)
-		except TypeError:
-			pass
+		if self.mqttOnConnect is not None:
+			self.mqttOnConnect(client, userData, flags, rc)
 
 	def _mqttOnMessage(self, client, userData, message):
 		log.debug("_mqttOnMessage userData={} topic={} payload={}".format(userData, message.topic, message.payload.decode("utf-8")))
@@ -126,16 +124,14 @@ class AlfonsIoT():
 					f = self._subscriptions[t][key]
 					f(message.topic, message.payload.decode("utf-8"))
 
-				if self.mqttOnMessage is not None:
-					self.mqttOnMessage(*args, **kwargs)
+		if self.mqttOnMessage is not None:
+			self.mqttOnMessage(client, userData, message)
 
 	def _mqttOnDisconnect(self, client, userData, rc):
 		log.debug("_mqttOnDisconnect userData={} rc={}".format(userData, rc))
 
-		try:
-			self.mqttOnConnect(*args, **kwargs)
-		except TypeError:
-			pass
+		if self.mqttOnDisconnect is not None:
+			self.mqttOnDisconnect(client, userData, rc)
 
 	@property
 	def webURL(self):
