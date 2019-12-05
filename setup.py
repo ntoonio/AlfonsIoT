@@ -18,7 +18,7 @@ with open(PATH + "README.md", "r") as fh:
 	long_description = fh.read()
 
 setuptools.setup(
-	name="AlfonsIoT",
+	name="alfonsiot",
 	version="0.0.5.1",
 	author="Anton Lindroth",
 	author_email="ntoonio@gmail.com",
