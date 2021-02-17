@@ -24,8 +24,8 @@ class AlfonsIoT():
 
 		self._subscriptions = {}
 
-		self.mqttOnConnect = None
-		self.mqttOnMessage = None
+		self.onConnect = None
+		self.onMessage = None
 		self.mqttOnDisconnect = None
 
 		self._mqttTCPport = None
@@ -117,8 +117,8 @@ class AlfonsIoT():
 	def _mqttOnConnect(self, client, userData, flags, rc):
 		log.info("MQTT connected. userData={} flags={} rc={}".format(userData, flags, rc))
 
-		if self.mqttOnConnect is not None:
-			self.mqttOnConnect(client, userData, flags, rc)
+		if self.onConnect is not None:
+			self.onConnect(self)
 
 	def _mqttOnMessage(self, client, userData, message):
 		log.debug("_mqttOnMessage userData={} topic={} payload={}".format(userData, message.topic, message.payload.decode("utf-8")))
@@ -127,10 +127,10 @@ class AlfonsIoT():
 			if _doTopicsMatch(t, message.topic):
 				for key in self._subscriptions[t]:
 					f = self._subscriptions[t][key]
-					f(message.topic, message.payload.decode("utf-8"))
+					f(message.payload.decode("utf-8"))
 
-		if self.mqttOnMessage is not None:
-			self.mqttOnMessage(client, userData, message)
+		if self.onMessage is not None:
+			self.onMessage(self, message.topic, message.payload.decode("utf-8"))
 
 	def _mqttOnDisconnect(self, client, userData, rc):
 		log.debug("_mqttOnDisconnect userData={} rc={}".format(userData, rc))

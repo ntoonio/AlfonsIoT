@@ -2,9 +2,22 @@
 
 This is a package for IoT's to interact with Alfons.
 
-	import AlfonsIoT as iot
+	import alfonsiot
 
-	def onMessage(client, userdata, msg):
-		print(msg.topic + " " + str(msg.payload))
+	def onMessage(iot, topic, payload):
+		print("onMessage", topic, payload)
 
-	iot.connect(on_connect=onConnect, on_message=onMessage)
+	def onTopicMessage(message):
+		print("Got message from specified", message)
+
+	def onConnect(iot):
+		print("Connected!", iot)
+
+		iot.subscribe("topic", onTopicMessage)
+
+		iot.publish("topic", "Message!")
+
+	iot = alfonsiot.start(host="", port="", username="", password="")
+
+	iot.onConnect = onConnect
+	iot.onMessage = onMessage
