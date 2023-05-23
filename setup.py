@@ -19,6 +19,6 @@ setuptools.setup(
 	packages=setuptools.find_packages(),
 	install_requires=[
 		"paho-mqtt==1.5.0",
-		"requests==2.25.1"
+		"requests==2.31.0"
 	]
 )
